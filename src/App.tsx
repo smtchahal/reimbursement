@@ -32,16 +32,8 @@ export default function App() {
   const [data, setData] = useState<Data[]>([]);
   const [date, setDate] = useState("");
   const [type, setType] = useState("court");
-  const [sender, setSender] = useState("");
-  const [receiver, setReceiver] = useState("");
   const [amount, setAmount] = useState<number | undefined>(defaultAmount);
   const templateRef = useRef(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setSender(params.get("sender") || "");
-    setReceiver(params.get("receiver") || "");
-  }, []);
 
   const addDatum = () => {
     if (!date || !amount) {
@@ -57,8 +49,6 @@ export default function App() {
 
   return (
     <div className="App">
-      <h1>Sender: {sender}</h1>
-      <h1>Receiver: {receiver}</h1>
       <h2>Enter some data.</h2>
       <table id="data">
         {data.map(({ id, date, amount }) => (
@@ -114,7 +104,6 @@ export default function App() {
             )
           }
         >
-          Hi {receiver},
           <br />
           <br />
           Please find attached the receipts of the following:
@@ -159,9 +148,6 @@ export default function App() {
           </b>
           <br />
           <br />
-          Thanks,
-          <br />
-          {sender}
         </div>
       ) : null}
     </div>
