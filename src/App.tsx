@@ -9,6 +9,8 @@ type Data = {
   amount: number;
 };
 
+console.log("Testing")
+
 function selectElementContents(el: HTMLElement) {
   const range = document.createRange();
   range.selectNodeContents(el);
