@@ -6,9 +6,8 @@ on:
       - master
 
     paths:
-      - 'package-lock.json'
-      - 'src/**.[jt]sx?'
-      - '.github/workflows/push-to-deploy.yml'
+      - '!README.md'
+      - '!.gitignore'
       - '!src/**/__tests__/**'
       - '!src/**.test.[jt]sx?'
 
