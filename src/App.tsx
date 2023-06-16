@@ -53,20 +53,20 @@ export default function App() {
   const [amount, setAmount] = useState<number>(defaultAmount);
   const templateRef = useRef(null);
 
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      return (event.returnValue = '');
-    };
-    if (data.length > 0) {
-      window.addEventListener('beforeunload', handleBeforeUnload);
-    } else {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    }
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [data]);
+  // useEffect(() => {
+  //   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  //     event.preventDefault();
+  //     return (event.returnValue = '');
+  //   };
+  //   if (data.length > 0) {
+  //     window.addEventListener('beforeunload', handleBeforeUnload);
+  //   } else {
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //   }
+  //   return () => {
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //   };
+  // }, [data]);
 
   const addDatum = () => {
     if (!date || !amount || !qty) {
