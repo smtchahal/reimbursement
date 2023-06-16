@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import './styles.css';
 
@@ -28,6 +28,19 @@ const groupBy = <T,>(
     return acc;
   }, {} as { [key: string]: T[] });
 
+const sortByKey = <T,>(unordered: Record<string, T>) =>
+  Object.keys(unordered)
+    .sort()
+    .reduce((obj, key) => {
+      obj[key] = unordered[key];
+      return obj;
+    }, {} as Record<string, T>);
+
+const pluralize = (count: number, noun: string, suffix = 's') =>
+  `${count} ${noun}${count !== 1 ? suffix : ''}`;
+
+const formatNumber = (n: number) => Intl.NumberFormat('en-IN').format(n);
+
 const defaultAmount = 600;
 
 const genId = () => (Math.random() + 1).toString(36).substring(2);
@@ -36,15 +49,34 @@ export default function App() {
   const [data, setData] = useState<Data[]>([]);
   const [date, setDate] = useState('');
   const [type, setType] = useState('court');
+  const [qty, setQty] = useState(1);
   const [amount, setAmount] = useState<number>(defaultAmount);
   const templateRef = useRef(null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      return (event.returnValue = '');
+    };
+    if (data.length > 0) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    } else {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [data]);
 
   const addDatum = () => {
     if (!date || !amount) {
       alert('Missing fields');
       return;
     }
-    setData(d => [...d, { id: genId(), type, date, amount }]);
+    setData(d => [
+      ...d,
+      ...Array(qty).fill({ id: genId(), type, date, amount }),
+    ]);
     setDate('');
     setAmount(defaultAmount);
   };
@@ -55,9 +87,10 @@ export default function App() {
     <div className="App">
       <h2>Enter some data.</h2>
       <table id="data">
-        {data.map(({ id, date, amount }) => (
+        {data.map(({ id, date, type, amount }) => (
           <tr key={id}>
             <td>{date}</td>
+            <td>{type}</td>
             <td>₹{amount}</td>
             <td>
               <button
@@ -74,6 +107,14 @@ export default function App() {
         ))}
       </table>
       <div>
+        <input
+          type="number"
+          min="1"
+          placeholder="quantity"
+          value={qty}
+          onChange={e => setQty(parseInt(e.target.value))}
+          style={{ width: 32 }}
+        />
         <input
           type="text"
           value={type}
@@ -111,35 +152,39 @@ export default function App() {
           Please find attached the receipts of the following:
           <br />
           <ol>
-            {Object.entries(groupBy(data, d => d.date)).map(
+            {Object.entries(sortByKey(groupBy(data, d => d.date))).map(
               ([date, datums]) => (
                 <li key={date}>
                   {moment(date).format('DD MMM')} -{' '}
-                  {datums.filter(d => d.type === 'court').length} court
-                  {datums.filter(d => d.type === 'court').length === 1
-                    ? ''
-                    : 's'}{' '}
-                  booked (₹
-                  {datums
-                    .filter(d => d.type === 'court')
-                    .map(_d => _d.amount)
-                    .reduce((acc, iter) => acc + iter, 0)}
-                  )
-                  {datums.filter(d => d.type !== 'court').length > 0 ? (
+                  {datums.length > 0 && (
                     <>
-                      {', '}
-                      {datums
-                        .filter(d => d.type !== 'court')
-                        .map(d => `${d.type} (₹${d.amount})`)
-                        .join(', ')}{' '}
-                      (Total: ₹
-                      {datums
-                        .map(_d => _d.amount)
-                        .reduce((acc, iter) => acc + iter, 0)}
-                      )
+                      {Object.entries(groupBy(datums, d => d.type)).map(
+                        ([type, typeData], index) => (
+                          <>
+                            {index > 0 && ', '}
+                            {pluralize(typeData.length, type)}
+                            {type === 'court' && ' booked'} (₹
+                            {formatNumber(
+                              typeData.reduce(
+                                (acc, iter) => acc + iter.amount,
+                                0,
+                              ),
+                            )}
+                            )
+                          </>
+                        ),
+                      )}{' '}
+                      {Object.entries(groupBy(datums, d => d.type)).length >
+                        0 && (
+                        <>
+                          (Total: ₹
+                          {formatNumber(
+                            datums.reduce((acc, iter) => acc + iter.amount, 0),
+                          )}
+                          )
+                        </>
+                      )}
                     </>
-                  ) : (
-                    ''
                   )}{' '}
                 </li>
               ),
@@ -147,7 +192,10 @@ export default function App() {
           </ol>
           Total:{' '}
           <b>
-            ₹{data.map(_d => _d.amount).reduce((acc, iter) => acc + iter, 0)}
+            ₹
+            {formatNumber(
+              data.map(_d => _d.amount).reduce((acc, iter) => acc + iter, 0),
+            )}
             /-
           </b>
           <br />
