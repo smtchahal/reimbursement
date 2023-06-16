@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import moment from 'moment';
 import './styles.css';
 
@@ -69,16 +69,19 @@ export default function App() {
   }, [data]);
 
   const addDatum = () => {
-    if (!date || !amount) {
+    if (!date || !amount || !qty) {
       alert('Missing fields');
       return;
     }
     setData(d => [
       ...d,
-      ...Array(qty).fill({ id: genId(), type, date, amount }),
+      ...Array(qty)
+        .fill(1)
+        .map(() => ({ id: genId(), type, date, amount })),
     ]);
     setDate('');
     setAmount(defaultAmount);
+    setQty(1);
   };
 
   console.log(groupBy(data, d => d.date));
@@ -87,24 +90,26 @@ export default function App() {
     <div className="App">
       <h2>Enter some data.</h2>
       <table id="data">
-        {data.map(({ id, date, type, amount }) => (
-          <tr key={id}>
-            <td>{date}</td>
-            <td>{type}</td>
-            <td>₹{amount}</td>
-            <td>
-              <button
-                type="button"
-                className="delete"
-                onClick={() => {
-                  setData(d => d.filter(it => it.id !== id));
-                }}
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        ))}
+        <tbody>
+          {data.map(({ id, date, type, amount }) => (
+            <tr key={id}>
+              <td>{date}</td>
+              <td>{type}</td>
+              <td>₹{amount}</td>
+              <td>
+                <button
+                  type="button"
+                  className="delete"
+                  onClick={() => {
+                    setData(d => d.filter(it => it.id !== id));
+                  }}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
       <div>
         <input
@@ -160,7 +165,7 @@ export default function App() {
                     <>
                       {Object.entries(groupBy(datums, d => d.type)).map(
                         ([type, typeData], index) => (
-                          <>
+                          <React.Fragment key={index}>
                             {index > 0 && ', '}
                             {pluralize(typeData.length, type)}
                             {type === 'court' && ' booked'} (₹
@@ -171,11 +176,10 @@ export default function App() {
                               ),
                             )}
                             )
-                          </>
+                          </React.Fragment>
                         ),
                       )}{' '}
-                      {Object.entries(groupBy(datums, d => d.type)).length >
-                        0 && (
+                      {new Set(datums.map(d => d.type)).size > 1 && (
                         <>
                           (Total: ₹
                           {formatNumber(
