@@ -53,9 +53,9 @@ export default function App() {
         .fill(1)
         .map(() => ({ id: genId(), type, date, amount })),
     ]);
-    setDate('');
-    setAmount(defaultAmount);
-    setQty(1);
+    // setDate('');
+    // setAmount(defaultAmount);
+    // setQty(1);
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

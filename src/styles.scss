@@ -25,6 +25,7 @@ body,
     border: solid black 1px;
     margin-top: 16px;
     font-family: Arial, Helvetica, sans-serif;
+    background: #fff;
     color: #222222;
     font-size: 13px;
     padding: 10px;
@@ -41,10 +42,6 @@ body,
 
     button {
       background-color: #333;
-      color: #fff;
-    }
-
-    #template {
       color: #fff;
     }
   }
