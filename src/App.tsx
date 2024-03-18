@@ -1,45 +1,15 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import moment from 'moment';
-import './styles.css';
-
-type Data = {
-  id: string;
-  type: string;
-  date: string;
-  amount: number;
-};
-
-function selectElementContents(el: HTMLElement) {
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const sel = window.getSelection();
-  if (sel) {
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
-}
-
-const groupBy = <T,>(
-  array: T[],
-  predicate: (value: T, index: number, array: T[]) => string,
-) =>
-  array.reduce((acc, value, index, array) => {
-    (acc[predicate(value, index, array)] ||= []).push(value);
-    return acc;
-  }, {} as { [key: string]: T[] });
-
-const sortByKey = <T,>(unordered: Record<string, T>) =>
-  Object.keys(unordered)
-    .sort()
-    .reduce((obj, key) => {
-      obj[key] = unordered[key];
-      return obj;
-    }, {} as Record<string, T>);
-
-const pluralize = (count: number, noun: string, suffix = 's') =>
-  `${count} ${noun}${count !== 1 ? suffix : ''}`;
-
-const formatNumber = (n: number) => Intl.NumberFormat('en-IN').format(n);
+import './styles.scss';
+import { Data } from './types';
+import {
+  formatNumber,
+  groupBy,
+  pluralize,
+  selectElementContents,
+  sortByKey,
+  useSessionStorage,
+} from './helpers';
 
 const defaultAmount = 600;
 
@@ -50,23 +20,27 @@ export default function App() {
   const [date, setDate] = useState('');
   const [type, setType] = useState('court');
   const [qty, setQty] = useState(1);
-  const [amount, setAmount] = useState<number>(defaultAmount);
+  const [amount, setAmount] = useState<number | ''>(defaultAmount);
   const templateRef = useRef(null);
+  const [isDarkMode, setIsDarkMode] = useSessionStorage(
+    'isDarkMode',
+    window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
 
-  // useEffect(() => {
-  //   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-  //     event.preventDefault();
-  //     return (event.returnValue = '');
-  //   };
-  //   if (data.length > 0) {
-  //     window.addEventListener('beforeunload', handleBeforeUnload);
-  //   } else {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   }
-  //   return () => {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   };
-  // }, [data]);
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = true;
+    };
+    if (data.length > 0) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    } else {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [data]);
 
   const addDatum = () => {
     if (!date || !amount || !qty) {
@@ -84,10 +58,42 @@ export default function App() {
     setQty(1);
   };
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // only allow numerals and decimals
+    const amountText = e.target.value.replace(/[^0-9.]/g, '');
+
+    // only allow 2 decimals
+    const [, decimals] = amountText.split('.');
+    if (decimals && decimals.length > 2) {
+      return;
+    }
+
+    const amount = parseFloat(amountText);
+    if (!isNaN(amount)) {
+      setAmount(amount);
+    } else {
+      setAmount('');
+    }
+  };
+
   console.log(groupBy(data, d => d.date));
 
+  const allData = useMemo(
+    () => Object.entries(sortByKey(groupBy(data, d => d.date))),
+    [data],
+  );
+
   return (
-    <div className="App">
+    <div className={isDarkMode ? 'App dark' : 'App'}>
+      <button
+        className={isDarkMode ? 'theme-toggle dark' : 'theme-toggle'}
+        type="button"
+        onClick={() => {
+          setIsDarkMode(d => !d);
+        }}
+      >
+        {isDarkMode ? '🌞' : '🌜'}
+      </button>
       <h2>Enter some data.</h2>
       <table id="data">
         <tbody>
@@ -135,9 +141,9 @@ export default function App() {
         <input
           type="number"
           min={1}
-          value={typeof amount === 'number' ? amount : ''}
+          value={amount}
           placeholder="Amount"
-          onChange={e => setAmount(parseInt(e.target.value, 10))}
+          onChange={handleAmountChange}
         />
         <button type="button" onClick={addDatum}>
           + Add data
@@ -157,42 +163,58 @@ export default function App() {
           Please find attached the receipts of the following:
           <br />
           <ol>
-            {Object.entries(sortByKey(groupBy(data, d => d.date))).map(
-              ([date, datums]) => (
+            {allData.map(([date, datums]) => {
+              const entries = Object.entries(groupBy(datums, d => d.type));
+              return (
                 <li key={date}>
-                  {moment(date).format('DD MMM')} -{' '}
+                  {moment(date).format('DD MMM')}
+                  {entries.length === 1 && ' - '}
                   {datums.length > 0 && (
                     <>
-                      {Object.entries(groupBy(datums, d => d.type)).map(
-                        ([type, typeData], index) => (
-                          <React.Fragment key={index}>
-                            {index > 0 && ', '}
-                            {pluralize(typeData.length, type)}
-                            {type === 'court' && ' booked'} (₹
-                            {formatNumber(
-                              typeData.reduce(
-                                (acc, iter) => acc + iter.amount,
-                                0,
-                              ),
-                            )}
-                            )
-                          </React.Fragment>
-                        ),
-                      )}{' '}
-                      {new Set(datums.map(d => d.type)).size > 1 && (
+                      {entries.length === 1 ? (
                         <>
-                          (Total: ₹
+                          {pluralize(datums.length, datums[0].type)} (
+                          {datums.length > 1 && (
+                            <>
+                              ₹{formatNumber(datums[0].amount)} x{' '}
+                              {datums.length} ={' '}
+                            </>
+                          )}
+                          ₹
                           {formatNumber(
                             datums.reduce((acc, iter) => acc + iter.amount, 0),
                           )}
                           )
                         </>
+                      ) : (
+                        <ul>
+                          {entries.map(([type, typeData], index) => (
+                            <li key={index}>
+                              {pluralize(typeData.length, type)} (
+                              {typeData.length > 1 ? (
+                                <>
+                                  ₹{formatNumber(typeData[0].amount)} x{' '}
+                                  {typeData.length} = ₹
+                                  {formatNumber(
+                                    typeData.reduce(
+                                      (acc, iter) => acc + iter.amount,
+                                      0,
+                                    ),
+                                  )}
+                                </>
+                              ) : (
+                                <>₹{formatNumber(typeData[0].amount)}</>
+                              )}
+                              )
+                            </li>
+                          ))}
+                        </ul>
                       )}
                     </>
                   )}{' '}
                 </li>
-              ),
-            )}
+              );
+            })}
           </ol>
           Total:{' '}
           <b>

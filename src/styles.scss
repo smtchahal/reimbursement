@@ -1,0 +1,95 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  padding: 20px;
+
+  #template {
+    text-align: left;
+    border: solid black 1px;
+    margin-top: 16px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #222222;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  &.dark {
+    background-color: #222;
+    color: #fff;
+
+    input {
+      background-color: #333;
+      color: #fff;
+    }
+
+    button {
+      background-color: #333;
+      color: #fff;
+    }
+
+    #template {
+      color: #fff;
+    }
+  }
+
+  .theme-toggle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    appearance: none;
+    background-color: #fff;
+    border: 1px solid #000;
+    border-radius: 5px;
+    color: #000;
+    padding: 5px 10px;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:hover {
+      background-color: #000;
+      color: #fff;
+    }
+
+    &:active {
+      background-color: #000;
+      color: #fff;
+    }
+
+    &.dark {
+      background-color: #000;
+      color: #fff;
+
+      &:hover {
+        background-color: #fff;
+        color: #000;
+      }
+
+      &:active {
+        background-color: #fff;
+        color: #000;
+      }
+    }
+
+    transition: background-color 0.3s, color 0.3s;
+  }
+}
+
+#data {
+  margin-bottom: 20px;
+}
