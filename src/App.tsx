@@ -8,7 +8,6 @@ import {
   pluralize,
   selectElementContents,
   sortByKey,
-  useSessionStorage,
 } from './helpers';
 
 const defaultAmount = 600;
@@ -22,8 +21,7 @@ export default function App() {
   const [qty, setQty] = useState(1);
   const [amount, setAmount] = useState<number | ''>(defaultAmount);
   const templateRef = useRef(null);
-  const [isDarkMode, setIsDarkMode] = useSessionStorage(
-    'isDarkMode',
+  const [isDarkMode, setIsDarkMode] = useState(
     window.matchMedia('(prefers-color-scheme: dark)').matches,
   );
 
@@ -41,6 +39,20 @@ export default function App() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [data]);
+
+  // Dark mode listener
+  useEffect(() => {
+    const darkModeListener = (e: MediaQueryListEvent) => {
+      setIsDarkMode(e.matches);
+    };
+    const darkModeMediaQuery = window.matchMedia(
+      '(prefers-color-scheme: dark)',
+    );
+    darkModeMediaQuery.addEventListener('change', darkModeListener);
+    return () => {
+      darkModeMediaQuery.removeEventListener('change', darkModeListener);
+    };
+  }, []);
 
   const addDatum = () => {
     if (!date || !amount || !qty) {
@@ -85,15 +97,6 @@ export default function App() {
 
   return (
     <div className={isDarkMode ? 'App dark' : 'App'}>
-      <button
-        className={isDarkMode ? 'theme-toggle dark' : 'theme-toggle'}
-        type="button"
-        onClick={() => {
-          setIsDarkMode(d => !d);
-        }}
-      >
-        {isDarkMode ? '🌞' : '🌜'}
-      </button>
       <h2>Enter some data.</h2>
       <table id="data">
         <tbody>

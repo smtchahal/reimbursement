@@ -1,5 +1,3 @@
-import React, { useState } from 'react';
-
 export const selectElementContents = (el: HTMLElement) => {
   const range = document.createRange();
   range.selectNodeContents(el);
@@ -31,31 +29,3 @@ export const pluralize = (count: number, noun: string, suffix = 's') =>
   `${count} ${noun}${count !== 1 ? suffix : ''}`;
 
 export const formatNumber = (n: number) => Intl.NumberFormat('en-IN').format(n);
-
-export function useSessionStorage<T>(
-  key: string,
-  initialValue: T,
-): [T, React.Dispatch<React.SetStateAction<T>>] {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(error);
-      return initialValue;
-    }
-  });
-
-  const setValue = (value: React.SetStateAction<T>) => {
-    try {
-      const valueToStore =
-        value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  return [storedValue, setValue];
-}
